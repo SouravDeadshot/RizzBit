@@ -1,0 +1,79 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Node / JavaScript / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+dist/
+build/
+.next/
+out/
+.turbo/
+.cache/
+
+# React Native & Mobile
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Android
+apps/**/android/.gradle
+apps/**/android/app/build/
+apps/**/android/build/
+apps/**/android/local.properties
+apps/**/android/.idea
+
+# iOS
+apps/**/ios/Pods/
+apps/**/ios/build/
+apps/**/ios/*.xcworkspace
+apps/**/ios/*.xcuserdata
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+ENV/
+
+# Go
+bin/
+vendor/
+
+# Logs & Temporary files
+logs/
+*.log
+tmp/
+temp/
+
+# IDE & Editor files
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
