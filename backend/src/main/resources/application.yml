@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: rizzbit-backend
+
+  # Java 21 Project Loom: Run all incoming requests on lightweight virtual threads
+  threads:
+    virtual:
+      enabled: true
+
+  # Redis In-Memory Geospatial Store (Redis GEO)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  # PostgreSQL with PostGIS Spatial Extension
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:rizzbit_db}
+    username: ${DB_USER:rizzbit_user}
+    password: ${DB_PASSWORD:rizzbit_secret_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    database-platform: org.hibernate.spatial.dialect.postgis.PostgisDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+# RizzBit Proximity Settings
+rizzbit:
+  proximity:
+    default-radius-meters: 1000.0  # 1 km default proximity radar
+    max-radius-meters: 10000.0     # 10 km max radar
+    location-ttl-seconds: 1800     # Auto-expire idle location pings after 30 mins (privacy guard)
+  security:
+    jwt-secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    jwt-expiration-ms: 86400000    # 24 hours
+
+logging:
+  level:
+    com.rizzbit: INFO
+    org.springframework.web: INFO

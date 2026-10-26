@@ -10,49 +10,116 @@
 
 ---
 
-## 🚀 Key Features
+## 🏗️ Architecture
 
-### 1. 📍 Dynamic Geo-Fencing & Hotspots
-- **Venue & Event Fences:** Automatically discover active geo-fences at verified venues, festivals, coffee shops, and university campuses.
-- **Ephemeral Rooms:** Join location-bounded matchmaking pools that are active only while you are within the perimeter.
+RizzBit pairs a high-performance **Java 21 + Spring Boot 3** backend with an in-memory **Redis Geospatial Index** and **PostgreSQL/PostGIS** database:
 
-### 2. ⚡ Proximity Radar (Real-Time Matching)
-- **Hyper-Local Discovery:** Match with individuals within adjustable proximity ranges (e.g., 100m, 500m, 1km, 5km).
-- **Proximity Sparks:** Instant nudges when someone matching your preferences enters your vicinity and mutual interest is signaled.
-
-### 3. 🛡️ Privacy & Safety by Design
-- **Fuzzy Proximity:** True GPS coordinates are never broadcast to other users; distance is obfuscated into privacy-safe zones or distance bands.
-- **Ghost Mode:** Instantly pause location broadcasting while retaining your profile and ongoing chats.
-- **Check-In Verification:** Location spoofing detection and safety check-ins.
-
-### 4. 💬 Real-Time Ephemeral Interaction
-- Icebreaker games, speed interactions, and proximity-based voice or text lounges before exchanging contacts.
+```
+┌─────────────────────────────────────────┐
+│     Mobile App (React Native / Flutter)  │
+└───────────────────┬─────────────────────┘
+                    │ REST / WebSockets (STOMP)
+                    ▼
+┌─────────────────────────────────────────┐
+│      Spring Boot 3 (Java 21)            │
+│  - Virtual Threads (Project Loom)       │
+│  - Spring Security (Stateless / JWT)    │
+│  - Haversine & JTS Geofencing Engine    │
+└───────────────┬─────────────────┬───────┘
+                │                 │
+                ▼                 ▼
+   ┌────────────────────┐  ┌────────────────────┐
+   │    Redis GEO       │  │ PostgreSQL/PostGIS │
+   │ (Sub-5ms Proximity │  │ (User profiles,    │
+   │  Radar & Lookups)  │  │  geofence polygons)│
+   └────────────────────┘  └────────────────────┘
+```
 
 ---
 
-## 🛠️ Architecture & Core Components
+## 🚀 Key Features
+
+### 1. 📍 In-Memory Proximity Radar (Sub-5ms)
+- Uses **Redis GEO** (`GEOADD`, `GEOSEARCH`) to index active user locations in real time.
+- Returns nearby candidates within adjustable radius bands (e.g. 100m, 500m, 1km, 5km).
+- Never queries disk database on raw GPS heartbeats.
+
+### 2. 🛡️ Privacy & Safety by Design
+- **Distance Bands:** Distances are returned as privacy-safe bands (`"Very Close (< 100m)"`, `"Within 500m"`) to prevent trilateration / stalking.
+- **Ghost Mode:** Instantly evicts the user's coordinates from the Redis spatial index with zero trace.
+- **Auto-Expiring Location:** Location TTL removes inactive users after 30 minutes.
+
+### 3. 🎪 Dynamic Geofenced Venues & Hotspots
+- Campus, event, festival, and venue geofencing.
+- Automatic check-in and room assignment when crossing boundary coordinates.
+
+---
+
+## 📁 Project Structure
 
 ```
 RizzBit/
-├── apps/               # Mobile / Web clients (e.g., React Native / Flutter / Web)
-├── services/           # Backend microservices / serverless functions
-│   ├── location/       # Geospatial indexing (Redis GEO / PostGIS) & geofence engine
-│   ├── matching/       # Proximity pairing algorithms & preference matching
-│   └── chat/           # Real-time WebSocket / WebRTC communication
-├── packages/           # Shared models, schemas, and utility libraries
-└── docs/               # System design, API specs, and security protocols
+├── backend/                      # Java 21 / Spring Boot 3 Backend
+│   ├── pom.xml                   # Maven dependencies (Spatial, Redis, Web, Security)
+│   └── src/main/
+│       ├── java/com/rizzbit/
+│       │   ├── config/           # Redis, Security, WebSocket configurations
+│       │   ├── controller/       # Proximity & Geofence REST APIs
+│       │   ├── dto/              # LocationPing, Radar responses, Geofence DTOs
+│       │   ├── model/            # UserProfile & GeofenceZone JPA entities
+│       │   ├── repository/       # Spring Data Repositories
+│       │   └── service/          # ProximityService (Redis GEO) & GeofenceService
+│       └── resources/
+│           └── application.yml   # Virtual threads, Redis & PostGIS settings
+├── docker-compose.yml            # Local Redis & PostGIS containers
+├── .env.example                  # Environment configuration template
+└── README.md
 ```
 
 ---
 
-## 🗺️ Roadmap
+## ⚡ Quick Start
 
-- [x] Initial Project Setup & Repository Initialization
-- [ ] Core Geospatial & Geofencing Engine (Redis GEO / PostGIS)
-- [ ] User Identity & Privacy-Preserving Location Architecture
-- [ ] Mobile Client Prototype (Proximity Radar & Radar Visualizer)
-- [ ] Ephemeral Chat & Match Engine
-- [ ] Beta Venue Launch & Campus Pilots
+### 1. Start Infrastructure (PostGIS + Redis)
+
+Make sure [Docker Desktop](https://www.docker.com/) is installed and running, then run:
+
+```bash
+docker compose up -d
+```
+
+This starts:
+- **Redis 7** on port `6379`
+- **PostgreSQL 16 with PostGIS** on port `5432`
+
+### 2. Run the Java Backend
+
+Requires **Java 21+** and **Maven**:
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+The server starts on port `8080`.
+
+---
+
+## 📡 API Reference
+
+### Proximity Radar
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/proximity/ping` | Heartbeat location ping (`latitude`, `longitude`, `ghostMode`) |
+| `GET` | `/api/v1/proximity/radar?userId={id}&radiusMeters=1000` | Real-time nearby matches within radius |
+
+### Geofences & Venues
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/geofences/active` | Get all active venue & event geofences |
+| `POST` | `/api/v1/geofences/check-in` | Check which geofences a user coordinate is inside |
 
 ---
 

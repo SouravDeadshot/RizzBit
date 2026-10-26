@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # In-memory spatial index & real-time proximity cache (Redis GEO)
+  redis:
+    image: redis:7-alpine
+    container_name: rizzbit-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Relational database with PostGIS spatial extension (Geofences, polygons, user profiles)
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: rizzbit-postgres
+    environment:
+      POSTGRES_DB: rizzbit_db
+      POSTGRES_USER: rizzbit_user
+      POSTGRES_PASSWORD: rizzbit_secret_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rizzbit_user -d rizzbit_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis_data:
+  postgres_data:
