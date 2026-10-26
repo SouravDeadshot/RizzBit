@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "RizzBit",
+    "slug": "rizzbit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d0e15"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rizzbit.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "RizzBit needs your location to discover nearby daters in real-time.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "RizzBit uses background geofencing to alert you when entering dynamic singles hotspots and social venues.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0d0e15"
+      },
+      "package": "com.rizzbit.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "INTERNET"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow RizzBit to alert you when matches are within your proximity radar."
+        }
+      ]
+    ]
+  }
+}
