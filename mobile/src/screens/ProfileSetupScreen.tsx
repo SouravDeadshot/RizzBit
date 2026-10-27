@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Modal,
 } from 'react-native';
 
 interface ProfileSetupScreenProps {
@@ -36,28 +37,60 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
   const [photos, setPhotos] = useState<string[]>([
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
   ]);
+  const [activeSlot, setActiveSlot] = useState<number>(0);
+  const [isSourceModalVisible, setIsSourceModalVisible] = useState<boolean>(false);
+  const [isCameraModalVisible, setIsCameraModalVisible] = useState<boolean>(false);
+  const [capturedPhotoPreview, setCapturedPhotoPreview] = useState<string | null>(null);
 
-  const handleAddPhoto = (slotIndex: number) => {
-    // In production, launches expo-image-picker
-    Alert.alert(
-      'Photo Upload',
-      'Upload a clear face photo so your matches can recognize you at the mall venue.',
-      [
-        {
-          text: 'Use Sample Photo',
-          onPress: () => {
-            const samplePhotos = [
-              'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
-              'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400',
-              'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400',
-            ];
-            const nextPhoto = samplePhotos[photos.length % samplePhotos.length];
-            setPhotos((prev) => [...prev, nextPhoto]);
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+  const sampleLibraryPhotos = [
+    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800',
+    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800',
+  ];
+
+  const sampleCameraPhotos = [
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+  ];
+
+  const handleOpenPhotoOptions = (slotIndex: number) => {
+    setActiveSlot(slotIndex);
+    setIsSourceModalVisible(true);
+  };
+
+  const handleSelectCamera = () => {
+    setIsSourceModalVisible(false);
+    setCapturedPhotoPreview(null);
+    setIsCameraModalVisible(true);
+  };
+
+  const handleSnapPhoto = () => {
+    const nextPhoto = sampleCameraPhotos[photos.length % sampleCameraPhotos.length];
+    setCapturedPhotoPreview(nextPhoto);
+  };
+
+  const handleUseCapturedPhoto = () => {
+    if (capturedPhotoPreview) {
+      setPhotos((prev) => {
+        const next = [...prev];
+        next[activeSlot] = capturedPhotoPreview;
+        return next;
+      });
+      setIsCameraModalVisible(false);
+      setCapturedPhotoPreview(null);
+    }
+  };
+
+  const handleSelectGallery = () => {
+    setIsSourceModalVisible(false);
+    const chosen = sampleLibraryPhotos[photos.length % sampleLibraryPhotos.length];
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[activeSlot] = chosen;
+      return next;
+    });
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -95,12 +128,9 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
         )}
-        <View>
+        <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Create Your Profile</Text>
-          <Text style={styles.headerSubtitle}>Daters in the mall will see this info</Text>
-        </View>
-        <View style={styles.stepBadge}>
-          <Text style={styles.stepBadgeText}>Step 2</Text>
+          <Text style={styles.headerSubtitle}>Daters in the zone will see this info</Text>
         </View>
       </View>
 
@@ -113,14 +143,14 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionLabel}>Photos (At least 1 required)</Text>
-            <Text style={styles.sectionHint}>Clear face photo is best</Text>
+            <Text style={styles.sectionHint}>Camera or gallery</Text>
           </View>
 
           <View style={styles.photosGrid}>
             {/* Slot 1: Main Photo */}
             <TouchableOpacity
               style={[styles.photoSlot, styles.mainPhotoSlot]}
-              onPress={() => (photos[0] ? handleRemovePhoto(0) : handleAddPhoto(0))}
+              onPress={() => (photos[0] ? handleRemovePhoto(0) : handleOpenPhotoOptions(0))}
               activeOpacity={0.8}
             >
               {photos[0] ? (
@@ -155,10 +185,33 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
                   onPress={() =>
                     photos[slotIdx]
                       ? handleRemovePhoto(slotIdx)
-                      : handleAddPhoto(slotIdx)
+                      : handleOpenPhotoOptions(slotIdx)
                   }
                   activeOpacity={0.8}
                 >
+                  {photos[slotIdx] ? (
+                    <View style={styles.photoContainer}>
+                      <View style={styles.smallAvatarPlaceholder}>
+                        <Text style={styles.smallAvatarLetter}>✓</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.removeBadge}
+                        onPress={() => handleRemovePhoto(slotIdx)}
+                      >
+                        <Text style={styles.removeBadgeText}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.emptySlotContent}>
+                      <Text style={styles.smallUploadIcon}>+</Text>
+                      <Text style={styles.smallUploadText}>Photo {slotIdx + 1}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
                   {photos[slotIdx] ? (
                     <View style={styles.photoContainer}>
                       <View style={styles.smallAvatarPlaceholder}>
@@ -248,10 +301,10 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
 
         {/* Section 6: Bio / Hangout Vibe */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Mall Hangout Vibe (Short Bio)</Text>
+          <Text style={styles.sectionLabel}>About You (Short Bio)</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="e.g. Grabbing iced lattes at Starbucks, checking out sneakers, or up for a quick arcade game ☕🎳"
+            placeholder="e.g. Grabbing iced lattes, checking out sneakers, or up for a quick arcade game ☕🎳"
             placeholderTextColor="#555870"
             multiline
             numberOfLines={3}
@@ -265,6 +318,121 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
           <Text style={styles.continueButtonText}>Find Nearby Zones →</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Photo Options Modal (Camera vs Gallery) */}
+      <Modal
+        visible={isSourceModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsSourceModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalSheetTitle}>Add Profile Photo</Text>
+            <Text style={styles.modalSheetSubtitle}>
+              Take a fresh picture with your camera or select from library
+            </Text>
+
+            <TouchableOpacity style={styles.modalOptionBtn} onPress={handleSelectCamera}>
+              <Text style={styles.modalOptionIcon}>📷</Text>
+              <View>
+                <Text style={styles.modalOptionTitle}>Take Photo with Camera</Text>
+                <Text style={styles.modalOptionSub}>Use front or rear camera</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.modalOptionBtn} onPress={handleSelectGallery}>
+              <Text style={styles.modalOptionIcon}>🖼️</Text>
+              <View>
+                <Text style={styles.modalOptionTitle}>Choose from Photo Library</Text>
+                <Text style={styles.modalOptionSub}>Select existing picture</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelBtn}
+              onPress={() => setIsSourceModalVisible(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Camera Capture Modal */}
+      <Modal
+        visible={isCameraModalVisible}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setIsCameraModalVisible(false)}
+      >
+        <SafeAreaView style={styles.cameraContainer}>
+          {/* Camera Top Bar */}
+          <View style={styles.cameraTopBar}>
+            <TouchableOpacity
+              style={styles.cameraCloseBtn}
+              onPress={() => setIsCameraModalVisible(false)}
+            >
+              <Text style={styles.cameraCloseText}>✕</Text>
+            </TouchableOpacity>
+            <Text style={styles.cameraTitle}>Camera</Text>
+            <Text style={styles.cameraFlashIcon}>⚡</Text>
+          </View>
+
+          {/* Camera Viewfinder */}
+          <View style={styles.viewfinder}>
+            {capturedPhotoPreview ? (
+              <View style={styles.capturedPreviewBox}>
+                <View style={styles.capturedPhotoCanvas}>
+                  <Text style={styles.capturedPhotoEmoji}>📸</Text>
+                  <Text style={styles.capturedPhotoText}>Photo Captured!</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.liveViewfinderBox}>
+                {/* Viewfinder Target / Guides */}
+                <View style={styles.viewfinderGrid}>
+                  <View style={styles.focusFrame}>
+                    <Text style={styles.focusFaceHint}>Position your face inside frame</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Camera Bottom Controls */}
+          <View style={styles.cameraBottomBar}>
+            {capturedPhotoPreview ? (
+              <View style={styles.cameraActionsRow}>
+                <TouchableOpacity
+                  style={styles.retakeBtn}
+                  onPress={() => setCapturedPhotoPreview(null)}
+                >
+                  <Text style={styles.retakeBtnText}>↺ Retake</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.usePhotoBtn}
+                  onPress={handleUseCapturedPhoto}
+                >
+                  <Text style={styles.usePhotoBtnText}>Use Photo ✓</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.shutterRow}>
+                <View style={{ width: 44 }} />
+                <TouchableOpacity style={styles.shutterButton} onPress={handleSnapPhoto}>
+                  <View style={styles.shutterInner} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.flipBtn}>
+                  <Text style={styles.flipText}>🔄</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -292,6 +460,9 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
   },
+  headerInfo: {
+    flex: 1,
+  },
   headerTitle: {
     color: '#ffffff',
     fontSize: 18,
@@ -301,17 +472,6 @@ const styles = StyleSheet.create({
     color: '#8b8e9f',
     fontSize: 12,
     marginTop: 2,
-  },
-  stepBadge: {
-    backgroundColor: 'rgba(255, 75, 110, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  stepBadgeText: {
-    color: '#ff4b6e',
-    fontSize: 12,
-    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
@@ -517,5 +677,230 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  /* Action Sheet Modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#171926',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 14,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#373a4d',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalSheetTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  modalSheetSubtitle: {
+    color: '#8b8e9f',
+    fontSize: 12,
+    marginTop: 2,
+    marginBottom: 16,
+  },
+  modalOptionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#202334',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 10,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  modalOptionIcon: {
+    fontSize: 24,
+  },
+  modalOptionTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalOptionSub: {
+    color: '#8b8e9f',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  modalCancelBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 6,
+  },
+  modalCancelText: {
+    color: '#8b8e9f',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  /* Camera Viewfinder Modal */
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'space-between',
+  },
+  cameraTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  cameraCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraCloseText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cameraTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  cameraFlashIcon: {
+    color: '#fbbf24',
+    fontSize: 18,
+  },
+  viewfinder: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginVertical: 10,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#12131a',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  liveViewfinderBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewfinderGrid: {
+    width: '80%',
+    aspectRatio: 3 / 4,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 20,
+  },
+  focusFrame: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  focusFaceHint: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  capturedPreviewBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  capturedPhotoCanvas: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  capturedPhotoEmoji: {
+    fontSize: 64,
+    marginBottom: 8,
+  },
+  capturedPhotoText: {
+    color: '#10b981',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  cameraBottomBar: {
+    paddingHorizontal: 24,
+    paddingBottom: 30,
+    paddingTop: 16,
+  },
+  shutterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shutterButton: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 4,
+    borderColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  shutterInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ff4b6e',
+  },
+  flipBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flipText: {
+    fontSize: 20,
+  },
+  cameraActionsRow: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  retakeBtn: {
+    flex: 1,
+    backgroundColor: '#202334',
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  retakeBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  usePhotoBtn: {
+    flex: 1,
+    backgroundColor: '#ff4b6e',
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  usePhotoBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
