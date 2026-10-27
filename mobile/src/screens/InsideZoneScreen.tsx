@@ -170,30 +170,16 @@ export const InsideZoneScreen: React.FC<InsideZoneScreenProps> = ({
           <Text style={styles.zoneTitle}>{zone.name}</Text>
         </View>
 
-        <View style={styles.headerRightActions}>
-          {/* Chat Icon Button */}
-          {onViewAllChats && (
-            <TouchableOpacity style={styles.chatHeaderBtn} onPress={onViewAllChats} activeOpacity={0.8}>
-              <Text style={styles.chatHeaderIcon}>💬</Text>
-              {matchedCount > 0 && (
-                <View style={styles.chatBadge}>
-                  <Text style={styles.chatBadgeText}>{matchedCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          )}
-
-          {/* Ghost Mode Toggle */}
-          <TouchableOpacity
-            style={[styles.ghostButton, isGhostMode && styles.ghostButtonActive]}
-            onPress={toggleGhostMode}
-          >
-            <Text style={styles.ghostIcon}>{isGhostMode ? '👻' : '👁️'}</Text>
-            <Text style={[styles.ghostText, isGhostMode && styles.ghostTextActive]}>
-              {isGhostMode ? 'Ghost: ON' : 'Visible'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Ghost Mode Toggle */}
+        <TouchableOpacity
+          style={[styles.ghostButton, isGhostMode && styles.ghostButtonActive]}
+          onPress={toggleGhostMode}
+        >
+          <Text style={styles.ghostIcon}>{isGhostMode ? '👻' : '👁️'}</Text>
+          <Text style={[styles.ghostText, isGhostMode && styles.ghostTextActive]}>
+            {isGhostMode ? 'Ghost: ON' : 'Visible'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Ghost Mode Active Notice */}
@@ -291,19 +277,17 @@ export const InsideZoneScreen: React.FC<InsideZoneScreenProps> = ({
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={onExitZone}>
-          <Text style={styles.navIcon}>🏬</Text>
-          <Text style={styles.navLabel}>Zones</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.navItemActive}>
           <Text style={styles.navIcon}>⚡</Text>
           <Text style={styles.navLabelActive}>In-Zone</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={onViewAllChats}>
           <Text style={styles.navIcon}>💬</Text>
-          <Text style={styles.navLabel}>
-            Chats{matchedCount > 0 ? ` (${matchedCount})` : ''}
-          </Text>
+          <Text style={styles.navLabel}>Chats</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Text style={styles.navIcon}>👤</Text>
+          <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -347,43 +331,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     marginTop: 2,
-  },
-  headerRightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  chatHeaderBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#1b122c',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 75, 110, 0.3)',
-    position: 'relative',
-  },
-  chatHeaderIcon: {
-    fontSize: 16,
-  },
-  chatBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#ff4b6e',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#0c0715',
-  },
-  chatBadgeText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '900',
   },
   ghostButton: {
     flexDirection: 'row',

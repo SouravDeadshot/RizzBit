@@ -180,23 +180,10 @@ export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({
           </Text>
         </View>
 
-        <View style={styles.headerRightRow}>
-          {activeTab === 'zones' && (
-            <TouchableOpacity
-              style={styles.headerChatPill}
-              onPress={() => setActiveTab('chats')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.headerChatIcon}>💬</Text>
-              <Text style={styles.headerChatText}>Chats ({matches.length})</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Offline Status Badge */}
-          <View style={styles.offlineStatusBadge}>
-            <View style={styles.offlineDot} />
-            <Text style={styles.offlineStatusText}>Outside Zone • Offline</Text>
-          </View>
+        {/* Offline Status Badge */}
+        <View style={styles.offlineStatusBadge}>
+          <View style={styles.offlineDot} />
+          <Text style={styles.offlineStatusText}>Outside Zone • Offline</Text>
         </View>
       </View>
 
@@ -211,7 +198,7 @@ export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({
             </View>
             <Text style={styles.bannerText}>
               Travel to any zone below. When you physically cross into the perimeter, your profile turns{' '}
-              <Text style={styles.boldText}>Online</Text> and matching unlocks! Existing matched chats stay open anytime.
+              <Text style={styles.boldText}>Online</Text> and matching unlocks!
             </Text>
           </View>
 
@@ -431,30 +418,6 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
-  },
-  headerRightRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerChatPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1f1530',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 75, 110, 0.4)',
-    gap: 4,
-  },
-  headerChatIcon: {
-    fontSize: 12,
-  },
-  headerChatText: {
-    color: '#ff4b6e',
-    fontSize: 11,
-    fontWeight: '800',
   },
   offlineStatusBadge: {
     flexDirection: 'row',
