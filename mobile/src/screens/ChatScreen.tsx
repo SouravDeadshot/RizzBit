@@ -21,17 +21,30 @@ interface Message {
 
 interface ChatScreenProps {
   matchedUser: CandidateProfile;
-  zoneName: string;
+  zoneName?: string;
+  isOutsideZone?: boolean;
   onBack: () => void;
 }
 
-export const ChatScreen: React.FC<ChatScreenProps> = ({ matchedUser, zoneName, onBack }) => {
+export const ChatScreen: React.FC<ChatScreenProps> = ({
+  matchedUser,
+  zoneName,
+  isOutsideZone = false,
+  onBack,
+}) => {
+  const displayZone = zoneName || matchedUser.matchedZoneName || 'Nexus Grand Mall';
+  const avatarChar = matchedUser.avatarLetter || matchedUser.name.charAt(0);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'm1',
       sender: 'them',
-      text: `Hey! I saw you're in ${zoneName} too! I'm by the ${matchedUser.exactSpot}.`,
-      time: 'Just now',
+      text:
+        matchedUser.lastMessage ||
+        (isOutsideZone
+          ? `Hey! Great matching with you in ${displayZone}! Chat is active whenever you want to talk.`
+          : `Hey! I saw you're in ${displayZone} too! Free to hang out right now?`),
+      time: matchedUser.lastMessageTime || 'Just now',
     },
   ]);
   const [inputText, setInputText] = useState('');
@@ -49,14 +62,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ matchedUser, zoneName, o
     setMessages((prev) => [...prev, newMsg]);
     setInputText('');
 
-    // Simulate reply from the person in the mall
+    // Simulate reply from the person
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'them',
-          text: 'Awesome, see you there! Look for me in the terrace lounge 👋',
+          text: isOutsideZone
+            ? 'Sounds great! Let’s definitely catch up soon ✨'
+            : 'Awesome, see you there! Look for me in the terrace lounge 👋',
           time: 'Just now',
         },
       ]);
@@ -71,17 +86,23 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ matchedUser, zoneName, o
     <SafeAreaView style={styles.container}>
       {/* Chat Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
 
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{matchedUser.name}, {matchedUser.age}</Text>
-          <Text style={styles.headerSpot}>📍 {matchedUser.exactSpot}</Text>
+          <Text style={styles.headerName}>
+            {matchedUser.name}, {matchedUser.age}
+          </Text>
+          <Text style={styles.headerSpot}>
+            {isOutsideZone
+              ? `🔒 Met at ${displayZone} • Active Anywhere`
+              : `📍 Active in ${displayZone}`}
+          </Text>
         </View>
 
         <View style={[styles.avatarBadge, { backgroundColor: matchedUser.avatarColor }]}>
-          <Text style={styles.avatarText}>{matchedUser.avatarLetter}</Text>
+          <Text style={styles.avatarText}>{avatarChar}</Text>
         </View>
       </View>
 
@@ -123,26 +144,53 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ matchedUser, zoneName, o
 
         {/* Quick In-Person Meet Prompts */}
         <View style={styles.icebreakerRow}>
-          <TouchableOpacity
-            style={styles.icebreakerPill}
-            onPress={() => handleIcebreaker('Hey! Grab a coffee right now? ☕')}
-          >
-            <Text style={styles.icebreakerText}>☕ Grab Coffee</Text>
-          </TouchableOpacity>
+          {isOutsideZone ? (
+            <>
+              <TouchableOpacity
+                style={styles.icebreakerPill}
+                onPress={() => handleIcebreaker('Hey! Free for coffee this week? ☕')}
+              >
+                <Text style={styles.icebreakerText}>☕ Coffee this week?</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.icebreakerPill}
-            onPress={() => handleIcebreaker("I'm by the food court, come say hi! 👋")}
-          >
-            <Text style={styles.icebreakerText}>👋 Food Court</Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.icebreakerPill}
+                onPress={() => handleIcebreaker('Are you still nearby the zone? 👋')}
+              >
+                <Text style={styles.icebreakerText}>👋 Still nearby?</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.icebreakerPill}
-            onPress={() => handleIcebreaker('Up for a game at the arcade? 🎳')}
-          >
-            <Text style={styles.icebreakerText}>🎳 Play Arcade</Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.icebreakerPill}
+                onPress={() => handleIcebreaker('How is your day going? ✨')}
+              >
+                <Text style={styles.icebreakerText}>✨ How’s your day?</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.icebreakerPill}
+                onPress={() => handleIcebreaker('Hey! Grab a coffee right now? ☕')}
+              >
+                <Text style={styles.icebreakerText}>☕ Grab Coffee</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.icebreakerPill}
+                onPress={() => handleIcebreaker("I'm by the food court, come say hi! 👋")}
+              >
+                <Text style={styles.icebreakerText}>👋 Food Court</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.icebreakerPill}
+                onPress={() => handleIcebreaker('Up for a game at the arcade? 🎳')}
+              >
+                <Text style={styles.icebreakerText}>🎳 Play Arcade</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Input Bar */}

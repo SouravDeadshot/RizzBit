@@ -9,7 +9,38 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
+  FlatList,
 } from 'react-native';
+
+export interface Country {
+  name: string;
+  code: string;
+  flag: string;
+}
+
+export const COUNTRIES: Country[] = [
+  { name: 'India', code: '+91', flag: '🇮🇳' },
+  { name: 'United States', code: '+1', flag: '🇺🇸' },
+  { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
+  { name: 'Canada', code: '+1', flag: '🇨🇦' },
+  { name: 'Australia', code: '+61', flag: '🇦🇺' },
+  { name: 'United Arab Emirates', code: '+971', flag: '🇦🇪' },
+  { name: 'Singapore', code: '+65', flag: '🇸🇬' },
+  { name: 'Germany', code: '+49', flag: '🇩🇪' },
+  { name: 'France', code: '+33', flag: '🇫🇷' },
+  { name: 'Japan', code: '+81', flag: '🇯🇵' },
+  { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+  { name: 'South Korea', code: '+82', flag: '🇰🇷' },
+  { name: 'Spain', code: '+34', flag: '🇪🇸' },
+  { name: 'Italy', code: '+39', flag: '🇮🇹' },
+  { name: 'Netherlands', code: '+31', flag: '🇳🇱' },
+  { name: 'Mexico', code: '+52', flag: '🇲🇽' },
+  { name: 'Indonesia', code: '+62', flag: '🇮🇩' },
+  { name: 'Saudi Arabia', code: '+966', flag: '🇸🇦' },
+  { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+  { name: 'New Zealand', code: '+64', flag: '🇳🇿' },
+];
 
 interface WelcomeScreenProps {
   onAuthSuccess?: (token: string, isNewUser: boolean) => void;
@@ -17,11 +48,20 @@ interface WelcomeScreenProps {
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthSuccess }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+1');
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
+  const [isCountryModalVisible, setIsCountryModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isAgeVerified, setIsAgeVerified] = useState(true);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [resendTimer, setResendTimer] = useState(30);
+
+  // Filter countries by name or dial code
+  const filteredCountries = COUNTRIES.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.code.includes(searchQuery)
+  );
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -101,8 +141,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthSuccess }) =
               <Text style={styles.label}>Enter your mobile phone number</Text>
               
               <View style={styles.phoneInputRow}>
-                <TouchableOpacity style={styles.countryPicker}>
-                  <Text style={styles.countryCodeText}>{countryCode}</Text>
+                <TouchableOpacity
+                  style={styles.countryPicker}
+                  onPress={() => {
+                    setSearchQuery('');
+                    setIsCountryModalVisible(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.flagEmoji}>{selectedCountry.flag}</Text>
+                  <Text style={styles.countryCodeText}>{selectedCountry.code}</Text>
                   <Text style={styles.dropdownArrow}>▼</Text>
                 </TouchableOpacity>
 
@@ -161,7 +209,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthSuccess }) =
             /* ================= STEP 2: 6-DIGIT OTP VERIFICATION ================= */
             <View style={styles.formCard}>
               <TouchableOpacity onPress={() => setIsOtpSent(false)} style={styles.backLink}>
-                <Text style={styles.backLinkText}>← Change Number ({countryCode} {phoneNumber})</Text>
+                <Text style={styles.backLinkText}>← Change Number ({selectedCountry.code} {phoneNumber})</Text>
               </TouchableOpacity>
 
               <Text style={styles.label}>Enter the 6-digit verification code</Text>
@@ -208,6 +256,77 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthSuccess }) =
           </Text>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Country Code Dropdown Modal */}
+      <Modal
+        visible={isCountryModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsCountryModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Select Country Code</Text>
+                <Text style={styles.modalSubtitle}>Choose your phone number prefix</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsCountryModalVisible(false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Box */}
+            <View style={styles.searchContainer}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search country or dial code (e.g. +91, +1)..."
+                placeholderTextColor="#6c6f85"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCorrect={false}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+                  <Text style={styles.clearSearchText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Country List */}
+            <FlatList
+              data={filteredCountries}
+              keyExtractor={(item) => `${item.name}-${item.code}`}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.countryList}
+              renderItem={({ item }) => {
+                const isSelected =
+                  selectedCountry.name === item.name && selectedCountry.code === item.code;
+                return (
+                  <TouchableOpacity
+                    style={[styles.countryRow, isSelected && styles.countryRowSelected]}
+                    onPress={() => {
+                      setSelectedCountry(item);
+                      setIsCountryModalVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.countryFlagText}>{item.flag}</Text>
+                    <Text style={styles.countryNameText}>{item.name}</Text>
+                    <Text style={styles.countryCodeBadge}>{item.code}</Text>
+                    {isSelected && <Text style={styles.countryCheckmark}>✓</Text>}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -299,7 +418,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    gap: 6,
+    gap: 8,
+  },
+  flagEmoji: {
+    fontSize: 18,
   },
   countryCodeText: {
     color: '#ffffff',
@@ -468,5 +590,115 @@ const styles = StyleSheet.create({
     color: '#555870',
     fontSize: 11,
     marginTop: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#171926',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '82%',
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  modalSubtitle: {
+    color: '#8b8e9f',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#202334',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#202334',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 14,
+    paddingVertical: 0,
+  },
+  clearSearchBtn: {
+    padding: 4,
+  },
+  clearSearchText: {
+    color: '#8b8e9f',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  countryList: {
+    paddingBottom: 20,
+  },
+  countryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  countryRowSelected: {
+    backgroundColor: 'rgba(255, 75, 110, 0.12)',
+  },
+  countryFlagText: {
+    fontSize: 22,
+    marginRight: 12,
+  },
+  countryNameText: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  countryCodeBadge: {
+    color: '#a0a3bd',
+    fontSize: 14,
+    fontWeight: '700',
+    marginRight: 10,
+  },
+  countryCheckmark: {
+    color: '#ff4b6e',
+    fontSize: 16,
+    fontWeight: '900',
   },
 });

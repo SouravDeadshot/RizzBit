@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { CandidateProfile } from './InsideZoneScreen';
 
 export interface DatingZone {
   id: string;
@@ -21,6 +22,26 @@ export interface DatingZone {
   latitude: number;
   longitude: number;
 }
+
+const DEFAULT_MATCHES: CandidateProfile[] = [
+  {
+    id: 'user-rhea',
+    name: 'Rhea',
+    age: 23,
+    bio: 'Waiting for friends to finish shopping. Let’s grab an iced latte right now ☕.',
+    photos: [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800',
+    ],
+    avatarColor: '#ff4b6e',
+    avatarLetter: 'R',
+    hasLikedYou: true,
+    matchedZoneName: 'Nexus Grand Mall',
+    lastMessage: 'Awesome, see you there! Look for me in the terrace lounge 👋',
+    lastMessageTime: '5m ago',
+  },
+];
 
 const ALL_MOCK_ZONES: DatingZone[] = [
   {
@@ -99,9 +120,18 @@ const PERIMETER_OPTIONS = [10, 20, 50, 100];
 
 interface ZonesListScreenProps {
   onEnterZone?: (zone: DatingZone) => void;
+  matches?: CandidateProfile[];
+  onOpenChat?: (matchedUser: CandidateProfile) => void;
+  initialTab?: 'zones' | 'chats';
 }
 
-export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({ onEnterZone }) => {
+export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({
+  onEnterZone,
+  matches = DEFAULT_MATCHES,
+  onOpenChat,
+  initialTab = 'zones',
+}) => {
+  const [activeTab, setActiveTab] = useState<'zones' | 'chats'>(initialTab);
   const [selectedPerimeter, setSelectedPerimeter] = useState<number>(20);
 
   // Filter zones within selected perimeter
@@ -145,116 +175,226 @@ export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({ onEnterZone })
       <View style={styles.header}>
         <View>
           <Text style={styles.brandTitle}>RizzBit ⚡</Text>
-          <Text style={styles.subtitle}>NEAREST DATING ZONES</Text>
+          <Text style={styles.subtitle}>
+            {activeTab === 'zones' ? 'NEAREST DATING ZONES' : 'ACTIVE CHATS & MATCHES'}
+          </Text>
         </View>
 
-        {/* Offline Status Badge */}
-        <View style={styles.offlineStatusBadge}>
-          <View style={styles.offlineDot} />
-          <Text style={styles.offlineStatusText}>Outside Zone • Offline</Text>
-        </View>
-      </View>
-
-      {/* Explanatory Banner */}
-      <View style={styles.offlineInfoBanner}>
-        <View style={styles.bannerHeader}>
-          <Text style={styles.lockIcon}>🔒</Text>
-          <Text style={styles.bannerTitle}>Matches are locked</Text>
-        </View>
-        <Text style={styles.bannerText}>
-          Travel to any zone below. When you physically cross into the perimeter, your profile turns{' '}
-          <Text style={styles.boldText}>Online</Text> and matching unlocks!
-        </Text>
-      </View>
-
-      {/* Perimeter Range Filter Selector (10km / 20km / 50km / 100km) */}
-      <View style={styles.perimeterContainer}>
-        <Text style={styles.perimeterTitle}>SEARCH PERIMETER:</Text>
-        <View style={styles.perimeterPillsRow}>
-          {PERIMETER_OPTIONS.map((km) => (
+        <View style={styles.headerRightRow}>
+          {activeTab === 'zones' && (
             <TouchableOpacity
-              key={km}
-              style={[
-                styles.perimeterPill,
-                selectedPerimeter === km && styles.perimeterPillActive,
-              ]}
-              onPress={() => setSelectedPerimeter(km)}
+              style={styles.headerChatPill}
+              onPress={() => setActiveTab('chats')}
+              activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.perimeterPillText,
-                  selectedPerimeter === km && styles.perimeterPillTextActive,
-                ]}
-              >
-                Within {km} km
-              </Text>
+              <Text style={styles.headerChatIcon}>💬</Text>
+              <Text style={styles.headerChatText}>Chats ({matches.length})</Text>
             </TouchableOpacity>
-          ))}
+          )}
+
+          {/* Offline Status Badge */}
+          <View style={styles.offlineStatusBadge}>
+            <View style={styles.offlineDot} />
+            <Text style={styles.offlineStatusText}>Outside Zone • Offline</Text>
+          </View>
         </View>
       </View>
 
-      {/* Section Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          Nearest Dating Zones ({filteredZones.length})
-        </Text>
-        <Text style={styles.cityPill}>📍 In Range</Text>
-      </View>
-
-      {/* Zones List */}
-      <FlatList
-        data={filteredZones}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <View style={styles.zoneCard}>
-            <View style={styles.zoneTopRow}>
-              <View style={styles.zoneInfo}>
-                <Text style={styles.zoneType}>{item.type.toUpperCase()}</Text>
-                <Text style={styles.zoneName}>{item.name}</Text>
-                <Text style={styles.popularSpotsText}>✨ {item.popularSpots}</Text>
-              </View>
-
-              {/* Only shows KM. Tapping launches maps directly */}
-              <TouchableOpacity
-                style={styles.distanceBox}
-                onPress={() => handleOpenMaps(item)}
-              >
-                <Text style={styles.distanceKmText}>{item.distanceKm} km</Text>
-                <Text style={styles.navMapIcon}>🗺️ Navigate</Text>
-              </TouchableOpacity>
+      {activeTab === 'zones' ? (
+        /* ================= TAB 1: DATING ZONES LIST ================= */
+        <View style={styles.tabContent}>
+          {/* Explanatory Banner */}
+          <View style={styles.offlineInfoBanner}>
+            <View style={styles.bannerHeader}>
+              <Text style={styles.lockIcon}>🔒</Text>
+              <Text style={styles.bannerTitle}>Matches are locked</Text>
             </View>
+            <Text style={styles.bannerText}>
+              Travel to any zone below. When you physically cross into the perimeter, your profile turns{' '}
+              <Text style={styles.boldText}>Online</Text> and matching unlocks! Existing matched chats stay open anytime.
+            </Text>
+          </View>
 
-            {/* Card Footer */}
-            <View style={styles.cardFooter}>
-              <View style={styles.onlineBadge}>
-                <View style={styles.onlinePulseDot} />
-                <Text style={styles.onlineCountText}>
-                  {item.onlineCount} singles online
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.enterButton}
-                onPress={() => onEnterZone?.(item)}
-              >
-                <Text style={styles.enterButtonText}>Arrive Here →</Text>
-              </TouchableOpacity>
+          {/* Perimeter Range Filter Selector (10km / 20km / 50km / 100km) */}
+          <View style={styles.perimeterContainer}>
+            <Text style={styles.perimeterTitle}>SEARCH PERIMETER:</Text>
+            <View style={styles.perimeterPillsRow}>
+              {PERIMETER_OPTIONS.map((km) => (
+                <TouchableOpacity
+                  key={km}
+                  style={[
+                    styles.perimeterPill,
+                    selectedPerimeter === km && styles.perimeterPillActive,
+                  ]}
+                  onPress={() => setSelectedPerimeter(km)}
+                >
+                  <Text
+                    style={[
+                      styles.perimeterPillText,
+                      selectedPerimeter === km && styles.perimeterPillTextActive,
+                    ]}
+                  >
+                    Within {km} km
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
-        )}
-      />
+
+          {/* Section Header */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Nearest Dating Zones ({filteredZones.length})
+            </Text>
+            <Text style={styles.cityPill}>📍 In Range</Text>
+          </View>
+
+          {/* Zones List */}
+          <FlatList
+            data={filteredZones}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <View style={styles.zoneCard}>
+                <View style={styles.zoneTopRow}>
+                  <View style={styles.zoneInfo}>
+                    <Text style={styles.zoneType}>{item.type.toUpperCase()}</Text>
+                    <Text style={styles.zoneName}>{item.name}</Text>
+                    <Text style={styles.popularSpotsText}>✨ {item.popularSpots}</Text>
+                  </View>
+
+                  {/* Only shows KM. Tapping launches maps directly */}
+                  <TouchableOpacity
+                    style={styles.distanceBox}
+                    onPress={() => handleOpenMaps(item)}
+                  >
+                    <Text style={styles.distanceKmText}>{item.distanceKm} km</Text>
+                    <Text style={styles.navMapIcon}>🗺️ Navigate</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Card Footer */}
+                <View style={styles.cardFooter}>
+                  <View style={styles.onlineBadge}>
+                    <View style={styles.onlinePulseDot} />
+                    <Text style={styles.onlineCountText}>
+                      {item.onlineCount} singles online
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.enterButton}
+                    onPress={() => onEnterZone?.(item)}
+                  >
+                    <Text style={styles.enterButtonText}>Arrive Here →</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          />
+        </View>
+      ) : (
+        /* ================= TAB 2: ACTIVE MATCHED CHATS ================= */
+        <View style={styles.tabContent}>
+          {/* Chats Banner */}
+          <View style={styles.chatInfoBanner}>
+            <View style={styles.bannerHeader}>
+              <Text style={styles.lockIcon}>💬</Text>
+              <Text style={styles.bannerTitle}>Matched Chats Stay Active Anywhere</Text>
+            </View>
+            <Text style={styles.bannerText}>
+              Even outside dating zones, all your matched conversations remain live so you can continue chatting and plan in-person dates!
+            </Text>
+          </View>
+
+          <FlatList
+            data={matches}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.matchesListContent}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.matchCard}
+                onPress={() => onOpenChat?.(item)}
+                activeOpacity={0.7}
+              >
+                {/* Avatar with status */}
+                <View style={[styles.matchAvatar, { backgroundColor: item.avatarColor }]}>
+                  <Text style={styles.matchAvatarLetter}>
+                    {item.avatarLetter || item.name.charAt(0)}
+                  </Text>
+                  <View style={styles.matchOnlineDot} />
+                </View>
+
+                {/* Match Information */}
+                <View style={styles.matchInfoCol}>
+                  <View style={styles.matchNameRow}>
+                    <Text style={styles.matchName}>{item.name}, {item.age}</Text>
+                    <Text style={styles.matchTimeText}>{item.lastMessageTime || 'Just now'}</Text>
+                  </View>
+
+                  <Text style={styles.matchZoneTag}>
+                    📍 Met at {item.matchedZoneName || 'Nexus Grand Mall'}
+                  </Text>
+
+                  <Text style={styles.matchSnippet} numberOfLines={1}>
+                    {item.lastMessage || 'Say hi and continue chatting! 👋'}
+                  </Text>
+                </View>
+
+                {/* Open Chat Pill */}
+                <View style={styles.openChatPill}>
+                  <Text style={styles.openChatPillText}>Chat →</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyChatsBox}>
+                <Text style={styles.emptyChatsIcon}>💬</Text>
+                <Text style={styles.emptyChatsTitle}>No Matched Chats Yet</Text>
+                <Text style={styles.emptyChatsDesc}>
+                  Travel to a nearby Dating Zone, browse active profiles, and mutually like someone to start chatting!
+                </Text>
+                <TouchableOpacity
+                  style={styles.browseZonesBtn}
+                  onPress={() => setActiveTab('zones')}
+                >
+                  <Text style={styles.browseZonesBtnText}>Explore Nearest Zones →</Text>
+                </TouchableOpacity>
+              </View>
+            }
+          />
+        </View>
+      )}
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItemActive}>
+        <TouchableOpacity
+          style={activeTab === 'zones' ? styles.navItemActive : styles.navItem}
+          onPress={() => setActiveTab('zones')}
+        >
           <Text style={styles.navIcon}>🏬</Text>
-          <Text style={styles.navLabelActive}>Zones</Text>
+          <Text style={activeTab === 'zones' ? styles.navLabelActive : styles.navLabel}>
+            Zones
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>💬</Text>
-          <Text style={styles.navLabel}>Chats</Text>
+
+        <TouchableOpacity
+          style={activeTab === 'chats' ? styles.navItemActive : styles.navItem}
+          onPress={() => setActiveTab('chats')}
+        >
+          <View style={styles.navIconContainer}>
+            <Text style={styles.navIcon}>💬</Text>
+            {matches.length > 0 && (
+              <View style={styles.navCountBadge}>
+                <Text style={styles.navCountBadgeText}>{matches.length}</Text>
+              </View>
+            )}
+          </View>
+          <Text style={activeTab === 'chats' ? styles.navLabelActive : styles.navLabel}>
+            Chats
+          </Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.navItem}>
           <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
@@ -288,6 +428,33 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#656a84',
     letterSpacing: 1.5,
+  },
+  tabContent: {
+    flex: 1,
+  },
+  headerRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerChatPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1f1530',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 75, 110, 0.4)',
+    gap: 4,
+  },
+  headerChatIcon: {
+    fontSize: 12,
+  },
+  headerChatText: {
+    color: '#ff4b6e',
+    fontSize: 11,
+    fontWeight: '800',
   },
   offlineStatusBadge: {
     flexDirection: 'row',
@@ -506,6 +673,25 @@ const styles = StyleSheet.create({
   navItemActive: {
     alignItems: 'center',
   },
+  navIconContainer: {
+    position: 'relative',
+  },
+  navCountBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#ff4b6e',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navCountBadgeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '900',
+  },
   navIcon: {
     fontSize: 18,
   },
@@ -520,5 +706,129 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     marginTop: 2,
+  },
+  /* Chats Tab Styles */
+  chatInfoBanner: {
+    backgroundColor: '#171926',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 75, 110, 0.2)',
+    borderRadius: 18,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    padding: 14,
+  },
+  matchesListContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  matchCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#171926',
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  matchAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    marginRight: 12,
+  },
+  matchAvatarLetter: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  matchOnlineDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10b981',
+    borderWidth: 2,
+    borderColor: '#171926',
+  },
+  matchInfoCol: {
+    flex: 1,
+    marginRight: 8,
+  },
+  matchNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  matchName: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  matchTimeText: {
+    color: '#656a84',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  matchZoneTag: {
+    color: '#ff4b6e',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  matchSnippet: {
+    color: '#94a3b8',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  openChatPill: {
+    backgroundColor: '#ff4b6e',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  openChatPillText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  emptyChatsBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 50,
+    paddingHorizontal: 20,
+  },
+  emptyChatsIcon: {
+    fontSize: 44,
+    marginBottom: 12,
+  },
+  emptyChatsTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  emptyChatsDesc: {
+    color: '#8e92a8',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  browseZonesBtn: {
+    backgroundColor: '#ff4b6e',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+  browseZonesBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

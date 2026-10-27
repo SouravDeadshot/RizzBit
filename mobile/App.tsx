@@ -14,6 +14,28 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [activeZone, setActiveZone] = useState<DatingZone | null>(null);
   const [activeChatUser, setActiveChatUser] = useState<CandidateProfile | null>(null);
+  const [chatReturnStep, setChatReturnStep] = useState<AppStep>('zones_list');
+
+  // Pre-seeded with Rhea so the user can immediately test chatting outside the zone!
+  const [matchedUsers, setMatchedUsers] = useState<CandidateProfile[]>([
+    {
+      id: 'user-rhea',
+      name: 'Rhea',
+      age: 23,
+      bio: 'Waiting for friends to finish shopping. Let’s grab an iced latte right now ☕.',
+      photos: [
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
+        'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800',
+        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800',
+      ],
+      avatarColor: '#ff4b6e',
+      avatarLetter: 'R',
+      hasLikedYou: true,
+      matchedZoneName: 'Nexus Grand Mall',
+      lastMessage: 'Awesome, see you there! Look for me in the terrace lounge 👋',
+      lastMessageTime: '5m ago',
+    },
+  ]);
 
   const handleAuthSuccess = (token: string, isNewUser: boolean) => {
     setCurrentStep('profile_setup');
@@ -29,8 +51,28 @@ export default function App() {
     setCurrentStep('inside_zone');
   };
 
-  const handleOpenChat = (matchedUser: CandidateProfile) => {
+  const handleOpenChatFromZones = (matchedUser: CandidateProfile) => {
     setActiveChatUser(matchedUser);
+    setChatReturnStep('zones_list');
+    setCurrentStep('chat');
+  };
+
+  const handleMutualMatchInsideZone = (matchedUser: CandidateProfile) => {
+    // Add to matched list if not already present
+    setMatchedUsers((prev) => {
+      if (prev.some((u) => u.id === matchedUser.id)) return prev;
+      return [
+        {
+          ...matchedUser,
+          matchedZoneName: activeZone?.name || 'Nexus Grand Mall',
+          lastMessage: 'Mutual match! Say hi 👋',
+          lastMessageTime: 'Just now',
+        },
+        ...prev,
+      ];
+    });
+    setActiveChatUser(matchedUser);
+    setChatReturnStep('inside_zone');
     setCurrentStep('chat');
   };
 
@@ -47,19 +89,27 @@ export default function App() {
         />
       )}
       {currentStep === 'zones_list' && (
-        <ZonesListScreen onEnterZone={handleEnterZone} />
+        <ZonesListScreen
+          onEnterZone={handleEnterZone}
+          matches={matchedUsers}
+          onOpenChat={handleOpenChatFromZones}
+        />
       )}
       {currentStep === 'inside_zone' && activeZone && (
         <InsideZoneScreen
           zone={activeZone}
-          onOpenChat={handleOpenChat}
+          matchedCount={matchedUsers.length}
+          onOpenChat={handleMutualMatchInsideZone}
+          onViewAllChats={() => setCurrentStep('zones_list')}
+          onExitZone={() => setCurrentStep('zones_list')}
         />
       )}
-      {currentStep === 'chat' && activeChatUser && activeZone && (
+      {currentStep === 'chat' && activeChatUser && (
         <ChatScreen
           matchedUser={activeChatUser}
-          zoneName={activeZone.name}
-          onBack={() => setCurrentStep('inside_zone')}
+          zoneName={activeChatUser.matchedZoneName || activeZone?.name || 'Nexus Grand Mall'}
+          isOutsideZone={chatReturnStep === 'zones_list'}
+          onBack={() => setCurrentStep(chatReturnStep)}
         />
       )}
     </SafeAreaProvider>
