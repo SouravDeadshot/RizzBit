@@ -12,54 +12,37 @@
 
 ## 🏗️ Architecture
 
-RizzBit pairs a high-performance **Java 21 + Spring Boot 3** backend with an in-memory **Redis Geospatial Index** and **PostgreSQL/PostGIS** database:
-
 ```
-┌─────────────────────────────────────────┐
-│     Mobile App (React Native / Flutter)  │
-└───────────────────┬─────────────────────┘
-                    │ REST / WebSockets (STOMP)
-                    ▼
-┌─────────────────────────────────────────┐
-│      Spring Boot 3 (Java 21)            │
-│  - Virtual Threads (Project Loom)       │
-│  - Spring Security (Stateless / JWT)    │
-│  - Haversine & JTS Geofencing Engine    │
-└───────────────┬─────────────────┬───────┘
-                │                 │
-                ▼                 ▼
-   ┌────────────────────┐  ┌────────────────────┐
-   │    Redis GEO       │  │ PostgreSQL/PostGIS │
-   │ (Sub-5ms Proximity │  │ (User profiles,    │
-   │  Radar & Lookups)  │  │  geofence polygons)│
-   └────────────────────┘  └────────────────────┘
+┌──────────────────────────────────────────────┐
+│       Mobile App (React Native / Expo)       │
+│  - Adaptive GPS Heartbeats (15m delta)       │
+│  - Pulsing Proximity Radar UI (60 FPS)       │
+│  - One-Tap Ghost Mode Privacy                │
+└──────────────────────┬───────────────────────┘
+                       │ REST / WebSockets
+                       ▼
+┌──────────────────────────────────────────────┐
+│          Spring Boot 3 (Java 21)             │
+│  - Virtual Threads (Project Loom)            │
+│  - Stateless Security & Auth                 │
+│  - Geofence Boundary Engine                  │
+└───────────────┬──────────────────────┬───────┘
+                │                      │
+                ▼                      ▼
+   ┌──────────────────────┐  ┌──────────────────────┐
+   │      Redis GEO       │  │  PostgreSQL/PostGIS  │
+   │  (Sub-5ms Proximity  │  │ (User profiles,      │
+   │   Radar & Lookups)   │  │  geofence polygons)  │
+   └──────────────────────┘  └──────────────────────┘
 ```
 
 ---
 
-## 🚀 Key Features
-
-### 1. 📍 In-Memory Proximity Radar (Sub-5ms)
-- Uses **Redis GEO** (`GEOADD`, `GEOSEARCH`) to index active user locations in real time.
-- Returns nearby candidates within adjustable radius bands (e.g. 100m, 500m, 1km, 5km).
-- Never queries disk database on raw GPS heartbeats.
-
-### 2. 🛡️ Privacy & Safety by Design
-- **Distance Bands:** Distances are returned as privacy-safe bands (`"Very Close (< 100m)"`, `"Within 500m"`) to prevent trilateration / stalking.
-- **Ghost Mode:** Instantly evicts the user's coordinates from the Redis spatial index with zero trace.
-- **Auto-Expiring Location:** Location TTL removes inactive users after 30 minutes.
-
-### 3. 🎪 Dynamic Geofenced Venues & Hotspots
-- Campus, event, festival, and venue geofencing.
-- Automatic check-in and room assignment when crossing boundary coordinates.
-
----
-
-## 📁 Project Structure
+## 📁 Repository Structure
 
 ```
 RizzBit/
-├── backend/                      # Java 21 / Spring Boot 3 Backend
+├── backend/                      # ☕ Java 21 / Spring Boot 3 Backend
 │   ├── pom.xml                   # Maven dependencies (Spatial, Redis, Web, Security)
 │   └── src/main/
 │       ├── java/com/rizzbit/
@@ -71,55 +54,73 @@ RizzBit/
 │       │   └── service/          # ProximityService (Redis GEO) & GeofenceService
 │       └── resources/
 │           └── application.yml   # Virtual threads, Redis & PostGIS settings
+├── mobile/                       # 📱 React Native (Expo) Frontend
+│   ├── App.tsx                   # Main mobile app root
+│   ├── app.json                  # Expo iOS/Android permissions config
+│   ├── package.json              # Mobile dependencies (expo-location, etc.)
+│   └── src/
+│       ├── api/client.ts         # Backend API client
+│       ├── components/           # RadarView, UserCard
+│       ├── hooks/                # useLocation (battery-saving GPS watcher)
+│       └── screens/              # RadarScreen
+├── docs/
+│   └── API_CONTRACT.md           # 🤝 Shared API contract & schemas between FE & BE
 ├── docker-compose.yml            # Local Redis & PostGIS containers
-├── .env.example                  # Environment configuration template
-└── README.md
+└── .env.example                  # Environment configuration template
 ```
 
 ---
 
-## ⚡ Quick Start
+## 👥 Two-Developer Workflow Guide
 
-### 1. Start Infrastructure (PostGIS + Redis)
+### 📱 For the Frontend Developer (React Native / Expo)
 
-Make sure [Docker Desktop](https://www.docker.com/) is installed and running, then run:
-
-```bash
-docker compose up -d
-```
-
-This starts:
-- **Redis 7** on port `6379`
-- **PostgreSQL 16 with PostGIS** on port `5432`
-
-### 2. Run the Java Backend
-
-Requires **Java 21+** and **Maven**:
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-The server starts on port `8080`.
+1. Make sure Node.js (v18+) is installed.
+2. Navigate to the mobile folder and install packages:
+   ```bash
+   cd mobile
+   npm install
+   ```
+3. Start the Expo development server:
+   ```bash
+   npm start
+   ```
+4. Point to the backend:
+   - By default, `mobile/src/api/client.ts` connects to `http://localhost:8080` (iOS simulator) or `http://10.0.2.2:8080` (Android emulator).
+   - If testing on a physical phone over Wi-Fi, create `mobile/.env` with:
+     ```env
+     EXPO_PUBLIC_API_URL=http://<YOUR_LOCAL_WIFI_IP>:8080
+     ```
 
 ---
 
-## 📡 API Reference
+### ☕ For the Backend Developer (Java / Spring Boot)
 
-### Proximity Radar
+1. **Start the Database & Redis via Docker:**
+   ```bash
+   docker compose up -d
+   ```
+   *(Starts Redis on port `6379` and PostgreSQL/PostGIS on `5432`)*
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/v1/proximity/ping` | Heartbeat location ping (`latitude`, `longitude`, `ghostMode`) |
-| `GET` | `/api/v1/proximity/radar?userId={id}&radiusMeters=1000` | Real-time nearby matches within radius |
+2. **Run the Spring Boot application:**
+   *(Requires JDK 21+ and Maven)*
+   ```bash
+   cd backend
+   mvn spring-boot:run
+   ```
+   The backend will boot up at `http://localhost:8080`.
 
-### Geofences & Venues
+3. **Check the API Contract:**
+   See [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) for all JSON schemas, endpoint paths, and privacy rules.
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/v1/geofences/active` | Get all active venue & event geofences |
-| `POST` | `/api/v1/geofences/check-in` | Check which geofences a user coordinate is inside |
+---
+
+## 🤝 Git Collaboration Guidelines
+
+- **Main branch:** `main` (production-ready stable code).
+- **Frontend branch:** create branches like `feat/fe-radar-animations` or `feat/fe-auth-ui`.
+- **Backend branch:** create branches like `feat/be-jwt-auth` or `feat/be-venues-crud`.
+- Open **Pull Requests (PRs)** to merge into `main` after testing.
 
 ---
 
