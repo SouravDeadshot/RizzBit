@@ -285,7 +285,7 @@ export const InsideZoneScreen: React.FC<InsideZoneScreenProps> = ({
           <Text style={styles.navIcon}>💬</Text>
           <Text style={styles.navLabel}>Chats</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={onExitZone}>
           <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>

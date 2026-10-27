@@ -93,6 +93,7 @@ export default function App() {
           onEnterZone={handleEnterZone}
           matches={matchedUsers}
           onOpenChat={handleOpenChatFromZones}
+          onLogout={() => setCurrentStep('welcome')}
         />
       )}
       {currentStep === 'inside_zone' && activeZone && (

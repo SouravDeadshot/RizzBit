@@ -123,6 +123,7 @@ interface ZonesListScreenProps {
   matches?: CandidateProfile[];
   onOpenChat?: (matchedUser: CandidateProfile) => void;
   initialTab?: 'zones' | 'chats';
+  onLogout?: () => void;
 }
 
 export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({
@@ -130,9 +131,25 @@ export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({
   matches = DEFAULT_MATCHES,
   onOpenChat,
   initialTab = 'zones',
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<'zones' | 'chats'>(initialTab);
   const [selectedPerimeter, setSelectedPerimeter] = useState<number>(20);
+
+  const handleProfilePress = () => {
+    Alert.alert(
+      'Account / Session',
+      'Choose an action:',
+      [
+        {
+          text: 'Log Out (Back to First Screen)',
+          style: 'destructive',
+          onPress: () => onLogout?.(),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
   // Filter zones within selected perimeter
   const filteredZones = ALL_MOCK_ZONES.filter(
@@ -382,7 +399,7 @@ export const ZonesListScreen: React.FC<ZonesListScreenProps> = ({
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={handleProfilePress}>
           <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
